@@ -1,0 +1,154 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SkillSwap API",
+    "version": "1.0.0",
+    "description": "Community Skill Exchange Platform — REST API"
+  },
+  "servers": [{ "url": "http://localhost:4000" }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    }
+  },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["name", "email", "password"],
+            "properties": {
+              "name": { "type": "string" },
+              "email": { "type": "string", "format": "email" },
+              "password": { "type": "string", "minLength": 6 },
+              "skillsOffered": { "type": "array", "items": { "type": "string" } },
+              "skillsWanted": { "type": "array", "items": { "type": "string" } }
+            }
+          }}}
+        },
+        "responses": {
+          "201": { "description": "Created — returns { token, user }" },
+          "409": { "description": "Email already registered" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login and receive JWT",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": {
+            "type": "object",
+            "required": ["email", "password"],
+            "properties": {
+              "email": { "type": "string" },
+              "password": { "type": "string" }
+            }
+          }}}
+        },
+        "responses": {
+          "200": { "description": "OK — returns { token, user }" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Get current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/api/skills": {
+      "get": {
+        "summary": "List / search / filter skill listings",
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "owner", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "summary": "Create a new skill listing",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object",
+          "required": ["skillName", "description", "category"],
+          "properties": {
+            "skillName": { "type": "string" },
+            "description": { "type": "string" },
+            "category": { "type": "string" }
+          }
+        }}}},
+        "responses": { "201": { "description": "Created" }, "400": { "description": "Validation error" } }
+      }
+    },
+    "/api/skills/{id}": {
+      "put": {
+        "summary": "Edit own skill listing",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
+      },
+      "delete": {
+        "summary": "Delete own listing (or any, if admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/requests": {
+      "get": {
+        "summary": "Get my incoming + outgoing exchange requests",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "summary": "Initiate a skill exchange request",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object",
+          "required": ["listingId", "offerSkill"],
+          "properties": {
+            "listingId": { "type": "string" },
+            "offerSkill": { "type": "string" },
+            "message": { "type": "string" }
+          }
+        }}}},
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/api/requests/{id}": {
+      "patch": {
+        "summary": "Approve / reject / cancel a request",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object",
+          "required": ["status"],
+          "properties": { "status": { "type": "string", "enum": ["approved", "rejected", "cancelled"] } }
+        }}}},
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "summary": "List all users (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Admin only" } }
+      }
+    },
+    "/api/admin/users/{id}": {
+      "delete": {
+        "summary": "Delete a user (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}
